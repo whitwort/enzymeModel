@@ -1,4 +1,4 @@
-bindingModel
+enzymeModel
 ============
 
 [Shiny](http://www.rstudio.com/shiny) web app that uses an ODE solver ([deSolve](http://cran.r-project.org/web/packages/deSolve/index.html)) to run a simple Michaelis-Menton enzyme kinetics model.
