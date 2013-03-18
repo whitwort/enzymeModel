@@ -18,12 +18,12 @@ shinyServer(function(input, output) {
     # Bind initial state and parameter inputs    
     return(list( 
         state = vapply( names(state)
-                      , function(name) { input[[name]] }
+                      , function(name) { as.numeric(input[[name]]) }
                       , FUN.VALUE = numeric(1)
                       )
         
       , parameters = vapply( names(parameters)
-                           , function(name) { input[[name]] }
+                           , function(name) { as.numeric(input[[name]]) }
                            , FUN.VALUE = numeric(1)
                            )
         

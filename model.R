@@ -53,11 +53,16 @@ model <- function(t, state, parameters) {
 rate <- function(v, t) {
   
   # TODO fix implementation with framework update
-  # For now, we just take regression of first 1% of Data
-  initial <- 1:(round(length(t) * 0.05))
-  fit     <- lm(v ~ t, list(v = v[initial], t = t[initial]))
-  
-  return( coefficients(fit)[[2]] )
+  # For now, we just do a regression on the first 5% of data points
+  return(
+    tryCatch({
+      initial <- 1:(round(length(t) * 0.05))
+      fit     <- lm(v ~ t, list(v = v[initial], t = t[initial]))
+      coefficients(fit)[[2]] 
+      }
+    , error = function(e) { NA }                  
+    )
+  )
   
 }
 
