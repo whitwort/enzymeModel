@@ -104,9 +104,9 @@ shinyUI(pageWithSidebar(
                                                      , choices = c( stateFormat(names(state))
                                                                   , parameterFormat(names(parameters))
                                                                   )
+                                                     )
                                        )
                                 )
-                            )
                            )
                  
                  , plotOutput('summaryPlot')
