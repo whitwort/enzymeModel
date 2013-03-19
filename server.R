@@ -61,21 +61,24 @@ shinyServer(function(input, output) {
     # recursion (hopefully this will be fixed in the framework at some point)
     isolate({
       
-      newRow <- nrow(store$summaryData) + 1
-      
-      # Capture each model initial state
-      for (state in names(args$state)) {
-        store$summaryData[newRow, stateFormat(state)] <- args$state[[state]]
-      }
-      
-      # Capture each model parameter
-      for (parameter in names(args$parameters)) {
-        store$summaryData[newRow, parameterFormat(parameter)] <- args$parameters[[parameter]]
-      }
-      
-      # Capture each summary calculation
-      for (summary in names(state.summary)) {
-        store$summaryData[newRow, summary] <- state.summary[[summary]](result)
+      # If all input parameters were valid, update the summary table
+      if (!NA %in% c(args$state, args$parameters)) {
+        newRow <- nrow(store$summaryData) + 1
+        
+        # Capture each model initial state
+        for (state in names(args$state)) {
+          store$summaryData[newRow, stateFormat(state)] <- args$state[[state]]
+        }
+        
+        # Capture each model parameter
+        for (parameter in names(args$parameters)) {
+          store$summaryData[newRow, parameterFormat(parameter)] <- args$parameters[[parameter]]
+        }
+        
+        # Capture each summary calculation
+        for (summary in names(state.summary)) {
+          store$summaryData[newRow, summary] <- state.summary[[summary]](result)
+        }
       }
       
     })
