@@ -1,5 +1,4 @@
 library(shiny)
-library(shinyIncubator)
 library(plyr)
 library(markdown)
 
