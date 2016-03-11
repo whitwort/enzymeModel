@@ -10,4 +10,5 @@ A quick tutorial for rna.wlu.edu users that walks through how you can fork and h
 
 ## License
 
-Copyright © 2013 Gregg Whitworth and licensed under [LGPLv3](http://www.gnu.org/copyleft/lesser.html).
+Copyright © 2016 Gregg Whitworth and licensed under [LGPLv3](http://www.gnu.org/copyleft/lesser.html).
+

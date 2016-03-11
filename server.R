@@ -6,7 +6,7 @@ library(reshape)
 source("model.R", local = TRUE)
 
 # Define server logic required to generate the plot
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
   
   #Session store is a reactive values ~list
   store              <- reactiveValues()
@@ -16,112 +16,118 @@ shinyServer(function(input, output) {
   runArgs   <- reactive({
     
     # Bind initial state and parameter inputs    
-    return(list( 
-        state = vapply( names(state)
-                      , function(name) { as.numeric(input[[name]]) }
-                      , FUN.VALUE = numeric(1)
-                      )
+    list( state = vapply( names(state)
+                        , function(name) { input[[name]] }
+                        , FUN.VALUE = numeric(1)
+                        )
+        , parameters = vapply( names(parameters)
+                             , function(name) { input[[name]] }
+                             , FUN.VALUE = numeric(1)
+                             )
         
-      , parameters = vapply( names(parameters)
-                           , function(name) { as.numeric(input[[name]]) }
-                           , FUN.VALUE = numeric(1)
-                           )
-        
-      ))
+        )
   })
   
   # Run the model in a reactive expression
   runModel  <- reactive({
     
-    args  <- runArgs()
-    
-    # Simulation time depth
-    depth <- (time["end"] - time["start"]) / time["step"]
+    args <- runArgs()
     
     # Run the simulation; convert result to a data.frame    
-    result <- data.frame(solver(
-        y     = args$state
-      , times = seq(time["start"], input$time.end, by = abs(input$time.end - time["start"]) / depth)
-      , func  = model
-      , parms = args$parameters
-    ))
-    
-    return(result)
+    data.frame( solver( y     = args$state
+                      , times = seq( time["start"]
+                                   , input$time.end
+                                   , by = abs(input$time.end - time["start"]) / 100
+                                   )
+                      , func  = model
+                      , parms = args$parameters
+                      )
+              )
     
   })
   
-  # Observers: these are run agressively
-  updateSummary <- observe({
+  observeEvent(input$simStart, {
+    updateSliderInput( session
+                     , inputId = 'simRun'
+                     , min     = input$simStart
+                     , step    = (input$simEnd - input$simStart) / simluationSteps
+                     )
+  })
+  
+  observeEvent(input$simEnd, {
+    updateSliderInput( session
+                     , inputId = 'simRun'
+                     , value   = input$simEnd
+                     , max     = input$simEnd
+                     , step    = (input$simEnd - input$simStart) / simluationSteps
+                     )
+  })
+  
+  observeEvent(input$simParameter, {
+    updateNumericInput(session, 'simEnd', value = input[[input$simParameter]])
+  })
+  
+  observeEvent(input$simRun, {
     
-    # Update with run updates
-    args    <- runArgs()
-    result  <- runModel()
-    
-    # Need to isolate the reactive value assignment call to avoid infinite
-    # recursion (hopefully this will be fixed in the framework at some point)
-    isolate({
+    updateNumericInput(session, input$simParameter, value = input$simRun)
+    if(input$tabs == "Simulation") {
+      # Update with run updates
+      args    <- runArgs()
+      result  <- runModel()
       
-      # If all input parameters were valid, update the summary table
-      if (!NA %in% c(args$state, args$parameters)) {
-        newRow <- nrow(store$summaryData) + 1
-        
-        # Capture each model initial state
-        for (state in names(args$state)) {
-          store$summaryData[newRow, stateFormat(state)] <- args$state[[state]]
-        }
-        
-        # Capture each model parameter
-        for (parameter in names(args$parameters)) {
-          store$summaryData[newRow, parameterFormat(parameter)] <- args$parameters[[parameter]]
-        }
-        
-        # Capture each summary calculation
-        for (summary in names(state.summary)) {
-          store$summaryData[newRow, summary] <- state.summary[[summary]](result)
-        }
+      newRow <- nrow(store$summaryData) + 1
+      
+      # Capture each model initial state
+      for (state in names(args$state)) {
+        store$summaryData[newRow, state] <- args$state[[state]]
       }
       
-    })
+      # Capture each model parameter
+      for (parameter in names(args$parameters)) {
+        store$summaryData[newRow, parameter] <- args$parameters[[parameter]]
+      }
+      
+      # Capture each summary calculation
+      for (summary in names(state.summary)) {
+        store$summaryData[newRow, summary] <- state.summary[[summary]](result)
+      }
+      
+      store$summaryData[newRow, 'series'] <- input$simSeries
+      
+    }
     
   })
   
-  clearSummary <- observe({
-    
-    # Run when reset button is pushed
-    resetNow <- input$resetSummary
-    
-    # Reset summary table, capturing current model result as first row of data
-    isolate({ store$summaryData <- store$summaryData[nrow(store$summaryData),names(store$summaryData)] })
-    
+  observeEvent( input$resetSummary, {
+    store$summaryData <- store$summaryData[nrow(store$summaryData), names(store$summaryData)]
   })
   
   # Simulation plot
   output$modelPlot <- renderPlot({
     
-    p <- ggplot(melt(runModel(), id = "time"))              +
-          geom_line( aes(time, value, colour = variable) )  +
-          ylab("[variable]")                                +
-          ylim(0, input$ymax)
-    
-    print(p)
+    ggplot(melt(runModel(), id = "time"))               +
+      geom_line( aes(time, value, colour = variable) )  +
+      ylab("[variable]")                                +
+      ylim(input$ymax[1], input$ymax[2])
     
   })
   
   # Summary plot
   output$summaryPlot <- renderPlot({
-    
-    p <- ggplot( data.frame( x = store$summaryData[[input$summaryX]]
-                           , y = store$summaryData[[input$summaryY]]
-                           )
-               , aes(x, y) 
-               )                        +
-          geom_point()                  +
-          geom_line( colour = "green" ) +
-          ylab(input$summaryY)          +
-          xlab(input$summaryX)
-    
-    print(p)
-    
+    if (nrow(store$summaryData) > 0) {
+      ggplot( data.frame( x = store$summaryData[[input$simParameter]]
+                        , y = store$summaryData[[input$simPlot]]
+                        , series = store$summaryData$series
+                        )
+                        , aes(x, y)
+            )                          +
+        geom_point()                   +
+        geom_line(aes(color = series)) +
+        xlab(input$simParameter)       +
+        ylab(input$simPlot)
+      
+    }
+  
   })
   
   # Summary download link

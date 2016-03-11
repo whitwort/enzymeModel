@@ -82,10 +82,13 @@ headerText    <- "Enzymatic Catalysis Model"
 #
 # If the string contains a path to local file, it's contents are loaded instead. 
 # 
-sidebarHeader     <- "The simulation will update as you change the input parameters below."
-sidebarFooter     <- "Version 0.3.  [Source code](https://github.com/whitwort/enzymeModel) available on github."
+sidebarHeader     <- "The simulation will update as you change the parameters below.  Use the 'Simulation' tab to iterate over a series of input parameters."
+sidebarFooter     <- "Version 0.4.  [Source code](https://github.com/whitwort/enzymeModel) available on github."
 modelDescription  <- "MODEL.md"
 
 # Label formatters
 stateFormat       <- function(name) { paste("Initial [", name, "] (mM)", sep = "") }
 parameterFormat   <- function(name) { paste("Rate of ", name, " (s-1)", sep = "")  }
+
+simluationSteps <- 25
+simulationTime  <- 20000
